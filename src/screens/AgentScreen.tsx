@@ -24,10 +24,34 @@ const AgentScreen = () => {
     setLoading(true);
 
     try {
-      // Use the 'openclaw agent' command to talk to the gateway
-      // --message provides the input, and we use a generic session-id for the mobile app
-      const command = `openclaw agent --message "${currentInput.replace(/"/g, '\\"')}" --session-id "mobile-app-chat"`;
-      const response = await sshService.execute(command);
+      // Parse commands if they start with /
+      let finalCommand = '';
+      const trimmedInput = currentInput.trim();
+      
+      if (trimmedInput.startsWith('/')) {
+        const parts = trimmedInput.split(' ');
+        const cmd = parts[0].substring(1);
+        const args = parts.slice(1).join(' ');
+        
+        switch (cmd) {
+          case 'status':
+            finalCommand = 'openclaw status';
+            break;
+          case 'thinking':
+            // Logic for setting thinking could be added to state, 
+            // for now we just pass it to the agent command if provided
+            finalCommand = `openclaw agent --message "Set thinking to ${args}" --thinking ${args} --session-id "mobile-app-chat"`;
+            break;
+          default:
+            // Fallback for other / commands: try to run them directly or as agent turns
+            finalCommand = `openclaw ${cmd} ${args}`;
+        }
+      } else {
+        // Default agent turn - matches the "main" session vibe
+        finalCommand = `openclaw agent --message "${currentInput.replace(/"/g, '\\"')}" --session-id "mobile-app-chat"`;
+      }
+
+      const response = await sshService.execute(finalCommand);
       
       const agentMsg: Message = { 
         id: (Date.now() + 1).toString(), 
