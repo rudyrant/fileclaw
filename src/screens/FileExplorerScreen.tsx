@@ -45,9 +45,17 @@ const FileExplorerScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Path: {path}</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.header}>Path: {path}</Text>
+        <TouchableOpacity 
+          style={styles.agentButton} 
+          onPress={() => navigation.navigate('Agent' as never)}
+        >
+          <Text style={styles.agentButtonText}>🤖 Agent</Text>
+        </TouchableOpacity>
+      </View>
       {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#E67E22" />
       ) : (
         <FlatList
           data={files}
@@ -61,13 +69,29 @@ const FileExplorerScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 10 },
-  header: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
-  item: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  container: { flex: 1, backgroundColor: '#121212' },
+  headerRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    padding: 15,
+    backgroundColor: '#1E1E1E',
+    borderBottomWidth: 1,
+    borderBottomColor: '#333'
+  },
+  header: { fontSize: 14, fontWeight: 'bold', color: '#E67E22', flex: 1 },
+  agentButton: {
+    backgroundColor: '#E67E22',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 15,
+  },
+  agentButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
+  item: { padding: 18, borderBottomWidth: 1, borderBottomColor: '#222' },
   itemText: { fontSize: 16 },
-  directory: { fontWeight: 'bold', color: '#007AFF' },
-  file: { color: '#333' },
-  empty: { textAlign: 'center', marginTop: 20, color: '#aaa' }
+  directory: { fontWeight: 'bold', color: '#E67E22' },
+  file: { color: '#CCC' },
+  empty: { textAlign: 'center', marginTop: 40, color: '#666' }
 });
 
 export default FileExplorerScreen;

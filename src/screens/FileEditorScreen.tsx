@@ -40,7 +40,7 @@ const FileEditorScreen = () => {
     <View style={styles.container}>
       <Text style={styles.header}>Editing: {path}</Text>
       {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#E67E22" />
       ) : (
         <TextInput
           style={styles.editor}
@@ -50,23 +50,34 @@ const FileEditorScreen = () => {
           textAlignVertical="top"
         />
       )}
-      <Button title="Save" onPress={handleSave} disabled={loading} />
+      <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading}>
+        <Text style={styles.saveButtonText}>{loading ? 'Saving...' : 'Save File'}</Text>
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 10 },
-  header: { fontSize: 16, fontWeight: 'bold', marginBottom: 10 },
+  container: { flex: 1, padding: 10, backgroundColor: '#121212' },
+  header: { fontSize: 14, fontWeight: 'bold', marginBottom: 10, color: '#E67E22' },
   editor: { 
     flex: 1, 
+    backgroundColor: '#1E1E1E',
+    color: '#EEE',
     borderWidth: 1, 
-    borderColor: '#ccc', 
+    borderColor: '#333', 
     padding: 10, 
     marginBottom: 10, 
     fontFamily: 'monospace',
     fontSize: 14 
   },
+  saveButton: {
+    backgroundColor: '#E67E22',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  saveButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 }
 });
 
 export default FileEditorScreen;

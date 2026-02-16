@@ -55,12 +55,12 @@ class RealSSHService implements SSHService {
     if (!this.client || !this.connected) throw new Error("Not connected");
     
     try {
-      // Use ls -p to append / to directories and avoid other symbols like * or @
-      // -1 ensures one entry per line
-      const command = `ls -p -1 "${path}"`;
+      // Use ls -pa to append / to directories and show hidden files
+      const command = `ls -pa -1 "${path}"`;
       const output = await this.client.execute(command);
       
-      const lines = output.split('\n').filter(line => line.trim() !== '');
+      const lines = output.split('\n')
+        .filter(line => line.trim() !== '' && line !== './' && line !== '../');
       
       return lines.map(line => {
         const isDirectory = line.endsWith('/');
