@@ -1,3 +1,5 @@
+import SSHClient from '@marcomueglich/react-native-ssh-client';
+
 export interface SSHFile {
   name: string;
   isDirectory: boolean;
@@ -14,101 +16,86 @@ export interface SSHService {
   execute(command: string): Promise<string>;
 }
 
-// Mock Implementation
-class MockSSHService implements SSHService {
+class RealSSHService implements SSHService {
+  private client: SSHClient | null = null;
   private connected = false;
-  private fileSystem: Record<string, string | Record<string, any>> = {
-    '/home/user': {
-      'documents': {
-        'notes.txt': 'Hello World from SSH!',
-        'project': {
-          'README.md': '# Project\n\nThis is a mock project.'
-        }
-      },
-      '.bashrc': 'export PATH=$PATH:/usr/local/bin'
-    },
-    '/var/log': {
-      'syslog': 'Feb 16 12:00:00 server systemd[1]: Started Session 1 of user root.'
-    }
-  };
 
   async connect(host: string, port: number, user: string, password?: string, key?: string): Promise<boolean> {
-    console.log(`Mock connecting to ${user}@${host}:${port} with password: ${password ? '***' : 'none'}`);
-    await new Promise<void>(resolve => setTimeout(() => resolve(), 1000)); // Simulate latency
-    if (host === 'fail') throw new Error("Connection failed");
-    this.connected = true;
-    return true;
+    try {
+      if (key) {
+        this.client = await SSHClient.connectWithKey(host, port, user, key);
+      } else if (password) {
+        this.client = await SSHClient.connectWithPassword(host, port, user, password);
+      } else {
+        throw new Error("Either password or private key must be provided");
+      }
+      this.connected = true;
+      return true;
+    } catch (error) {
+      console.error("SSH Connection failed:", error);
+      this.connected = false;
+      return false;
+    }
   }
 
   async disconnect(): Promise<void> {
+    if (this.client) {
+      this.client.disconnect();
+      this.client = null;
+    }
     this.connected = false;
   }
 
+  async execute(command: string): Promise<string> {
+    if (!this.client || !this.connected) throw new Error("Not connected");
+    return await this.client.execute(command);
+  }
+
   async list(path: string): Promise<SSHFile[]> {
-    if (!this.connected) throw new Error("Not connected");
-    await new Promise<void>(resolve => setTimeout(() => resolve(), 500));
+    if (!this.client || !this.connected) throw new Error("Not connected");
     
-    // Simple path traversal simulation
-    let current: any = this.fileSystem;
-    const parts = path.split('/').filter(p => p);
-    
-    for (const part of parts) {
-      if (current[part] && typeof current[part] === 'object') {
-        current = current[part];
-      } else {
-        return []; // Path not found or is a file
-      }
+    try {
+      // Use ls -F to identify directories (they end with /)
+      // -1 ensures one entry per line
+      const command = `ls -F -1 "${path}"`;
+      const output = await this.client.execute(command);
+      
+      const lines = output.split('\n').filter(line => line.trim() !== '');
+      
+      return lines.map(line => {
+        let isDirectory = line.endsWith('/');
+        let name = isDirectory ? line.slice(0, -1) : line;
+        
+        // Handle strict markers like * (executable) or @ (symlink) if ls -F adds them
+        // Common ls -F markers: / (dir), * (exe), @ (symlink), | (FIFO), = (socket)
+        if (name.endsWith('*') || name.endsWith('@') || name.endsWith('|') || name.endsWith('=')) {
+           name = name.slice(0, -1);
+        }
+        
+        return {
+          name: name,
+          isDirectory: isDirectory,
+          path: path === '/' ? `/${name}` : `${path}/${name}`,
+          size: 0 // Size retrieval would require ls -l and more complex parsing
+        };
+      });
+    } catch (error) {
+      console.error("List failed:", error);
+      return [];
     }
-
-    if (typeof current !== 'object') return [];
-
-    return Object.keys(current).map(key => ({
-      name: key,
-      isDirectory: typeof current[key] === 'object',
-      path: path === '/' ? `/${key}` : `${path}/${key}`,
-      size: typeof current[key] === 'string' ? current[key].length : 0
-    }));
   }
 
   async readFile(path: string): Promise<string> {
-    if (!this.connected) throw new Error("Not connected");
-    await new Promise<void>(resolve => setTimeout(() => resolve(), 300));
-
-    let current: any = this.fileSystem;
-    const parts = path.split('/').filter(p => p);
-    
-    for (const part of parts) {
-        current = current?.[part];
-    }
-
-    if (typeof current === 'string') return current;
-    throw new Error("File not found or is a directory");
+    if (!this.client || !this.connected) throw new Error("Not connected");
+    return await this.client.execute(`cat "${path}"`);
   }
 
   async writeFile(path: string, content: string): Promise<void> {
-    if (!this.connected) throw new Error("Not connected");
-    await new Promise<void>(resolve => setTimeout(() => resolve(), 600));
-    console.log(`Mock write to ${path}: ${content.substring(0, 20)}...`);
-    
-    // In a real mock, we'd update this.fileSystem, but for now just logging is enough for UI feedback
-    // Updating mock state for consistency
-    let current: any = this.fileSystem;
-    const parts = path.split('/').filter(p => p);
-    const fileName = parts.pop();
-    
-    if (!fileName) throw new Error("Invalid path");
-
-    for (const part of parts) {
-        if (!current[part]) current[part] = {};
-        current = current[part];
-    }
-    current[fileName] = content;
-  }
-
-  async execute(command: string): Promise<string> {
-    if (!this.connected) throw new Error("Not connected");
-    return `Mock output for: ${command}`;
+    if (!this.client || !this.connected) throw new Error("Not connected");
+    // Escape single quotes for echo
+    const escapedContent = content.replace(/'/g, "'\\''");
+    await this.client.execute(`echo '${escapedContent}' > "${path}"`);
   }
 }
 
-export const sshService = new MockSSHService();
+export const sshService = new RealSSHService();
