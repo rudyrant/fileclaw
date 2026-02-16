@@ -55,16 +55,25 @@ class RealSSHService implements SSHService {
     if (!this.client || !this.connected) throw new Error("Not connected");
     
     try {
-      // Use ls -pa to append / to directories and show hidden files
-      const command = `ls -pa -1 "${path}"`;
+      // Use ls -F to mark directories with / and -1 for single column
+      // We also use 'ls -la' to get detailed info if we wanted, 
+      // but 'ls -F1a' is cleaner for just names + type markers
+      const command = `ls -F1a "${path}"`;
       const output = await this.client.execute(command);
       
       const lines = output.split('\n')
-        .filter(line => line.trim() !== '' && line !== './' && line !== '../');
+        .filter(line => {
+          const trimmed = line.trim();
+          return trimmed !== '' && trimmed !== './' && trimmed !== '../';
+        });
       
       return lines.map(line => {
-        const isDirectory = line.endsWith('/');
-        const name = isDirectory ? line.slice(0, -1) : line;
+        const cleanLine = line.trim();
+        const isDirectory = cleanLine.endsWith('/');
+        const isSymbolicLink = cleanLine.endsWith('@');
+        
+        // Remove markers (*, /, @, |, =) from the name
+        const name = cleanLine.replace(/[*\/@|=]$/, '');
         
         return {
           name: name,
