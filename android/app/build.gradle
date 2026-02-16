@@ -52,9 +52,6 @@ react {
 
     /* Autolinking */
     autolinkLibrariesWithApp()
-
-    /* Bundling in Debug */
-    bundleInDebug = true
 }
 
 /**
