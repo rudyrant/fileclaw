@@ -9,6 +9,7 @@ const ConnectionScreen = () => {
   const [port, setPort] = useState('22');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [initialPath, setInitialPath] = useState('');
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
@@ -21,6 +22,7 @@ const ConnectionScreen = () => {
         setPort(config.port);
         setUsername(config.username);
         setPassword(config.password);
+        setInitialPath(config.initialPath || `/home/${config.username}`);
       }
     };
     loadSaved();
@@ -35,9 +37,12 @@ const ConnectionScreen = () => {
     setLoading(true);
     try {
       await sshService.connect(host, parseInt(port, 10), username, password);
-      await AsyncStorage.setItem('connection_config', JSON.stringify({ host, port, username, password }));
+      const config = { host, port, username, password, initialPath };
+      await AsyncStorage.setItem('connection_config', JSON.stringify(config));
+      
+      const targetPath = initialPath || `/home/${username}`;
       // @ts-ignore
-      navigation.navigate('FileExplorer', { path: `/home/${username}` });
+      navigation.navigate('FileExplorer', { path: targetPath });
     } catch (error: any) {
       Alert.alert('Connection Failed', error.message);
     } finally {
@@ -58,13 +63,22 @@ const ConnectionScreen = () => {
       <Text style={styles.label}>Username</Text>
       <TextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" />
 
-      <Text style={styles.label}>Password (or Private Key path)</Text>
+      <Text style={styles.label}>Password</Text>
       <TextInput 
         style={styles.input} 
         value={password} 
         onChangeText={setPassword} 
         secureTextEntry 
         placeholder="Enter password"
+      />
+
+      <Text style={styles.label}>Initial Path (Optional)</Text>
+      <TextInput 
+        style={styles.input} 
+        value={initialPath} 
+        onChangeText={setInitialPath} 
+        placeholder={`/home/${username || 'user'}`}
+        autoCapitalize="none"
       />
 
       {loading ? (
