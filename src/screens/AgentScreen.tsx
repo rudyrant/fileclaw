@@ -24,9 +24,9 @@ const AgentScreen = () => {
     setLoading(true);
 
     try {
-      // We communicate with OpenClaw by calling the 'openclaw' CLI over SSH
-      // Using 'openclaw chat' or similar if available, or just sending to a file/service
-      const command = `openclaw chat "${currentInput.replace(/"/g, '\\"')}"`;
+      // Use the 'openclaw agent' command to talk to the gateway
+      // --message provides the input, and we use a generic session-id for the mobile app
+      const command = `openclaw agent --message "${currentInput.replace(/"/g, '\\"')}" --session-id "mobile-app-chat"`;
       const response = await sshService.execute(command);
       
       const agentMsg: Message = { 
