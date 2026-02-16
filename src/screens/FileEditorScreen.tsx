@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, StyleSheet, ActivityIndicator, Alert, Text } from 'react-native';
+import { View, TextInput, StyleSheet, ActivityIndicator, Alert, Text, TouchableOpacity } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { sshService } from '../services/SSHService';
 
