@@ -37,7 +37,7 @@ const ConnectionScreen = () => {
       await sshService.connect(host, parseInt(port, 10), username, password);
       await AsyncStorage.setItem('connection_config', JSON.stringify({ host, port, username, password }));
       // @ts-ignore
-      navigation.navigate('FileExplorer', { path: '/home/user' });
+      navigation.navigate('FileExplorer', { path: `/home/${username}` });
     } catch (error: any) {
       Alert.alert('Connection Failed', error.message);
     } finally {
